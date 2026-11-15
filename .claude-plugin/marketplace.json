@@ -1,0 +1,5 @@
+{
+  "name": "cielo-estrellado",
+  "owner": { "name": "Jose" },
+  "plugins": [{ "name": "cielo-estrellado", "source": "./" }]
+}
