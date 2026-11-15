@@ -79,7 +79,7 @@ function manchas(): string {
   return out
 }
 
-function viaLactea(): string {
+function viaLactea(animado: boolean): string {
   const r = rng(71)
   const tonos = ['#5f7fd8', '#7f98ee', '#8fa4ff', '#6f8fe6', '#9fb4ff']
   let nubes = '<ellipse cx="800" cy="418" rx="900" ry="125" fill="#3b5cb4" fill-opacity="0.1"/>'
@@ -132,7 +132,8 @@ function viaLactea(): string {
     const a = 10 + h() * 16
     const d = `M150 ${f(y0)}C${f(380)} ${f(y0 - a)} ${f(600)} ${f(y0 + a)} 800 ${f(y0 + (h() - 0.5) * 10)}S${f(1220)} ${f(y0 - a)} 1450 ${f(y0 + (h() - 0.5) * 14)}`
     const sentido = i % 2 === 0 ? 'normal' : 'reverse'
-    hilos += `<path class="d" style="animation-duration:${190 + i * 37}s;animation-direction:${sentido};animation-delay:-${i * 23}s" d="${d}" stroke="${i % 3 === 0 ? PALIDA : '#e4ecff'}" stroke-width="${i % 2 === 0 ? 1.1 : 0.9}"/>`
+    const movimiento = animado ? `class="d" style="animation-duration:${190 + i * 37}s;animation-direction:${sentido};animation-delay:-${i * 23}s"` : 'stroke-dasharray="0 31 0 57 0 23 0 71 0 44 0 90"'
+    hilos += `<path ${movimiento} d="${d}" stroke="${i % 3 === 0 ? PALIDA : '#e4ecff'}" stroke-width="${i % 2 === 0 ? 1.1 : 0.9}"/>`
   }
 
   return `<g transform="rotate(-24 800 418)"><g filter="url(#b1)">${nubes}</g><g filter="url(#b2)">${finas}</g>${polvo}${grano}<g fill="none" stroke-linecap="round" stroke-opacity="0.5" mask="url(#mh)">${hilos}</g></g>`
@@ -164,7 +165,7 @@ function fondoEstrellas(): string {
 
 // Capa cercana: estrellas sueltas que titilan, repartidas con distancia mínima entre ellas.
 // Tres mecanismos: a = opacity, b = radio (r), c = stroke-dashoffset (la estrella es un trazo circular que se recorta).
-function cercanas(): string {
+function cercanas(animado: boolean): string {
   const r = rng(101)
   const sitios: Array<[number, number]> = []
   let out = ''
@@ -190,6 +191,13 @@ function cercanas(): string {
     const ritmo = `style="animation-duration:${dur}s;animation-delay:-${f(r() * dur)}s"`
     const tipo = i % 3
 
+    // Fijo: todas son puntos sencillos, sin clase ni estilo.
+    if (!animado) {
+      out += `<circle cx="${f(x)}" cy="${f(y)}" r="${radio}" fill="${tono}" fill-opacity="${op}"/>`
+
+      return
+    }
+
     if (tipo === 0) {
       out += `<circle class="c" ${ritmo} pathLength="1" cx="${f(x)}" cy="${f(y)}" r="${f(radio / 2)}" stroke="${tono}" stroke-width="${radio}" stroke-opacity="${op}"/>`
     } else {
@@ -201,7 +209,7 @@ function cercanas(): string {
 }
 
 // Pocas estrellas brillantes: halo suave, núcleo y espigas de difracción finas que respiran (stroke-dashoffset).
-function brillantes(): string {
+function brillantes(animado: boolean): string {
   const lista: Array<[number, number, number, string]> = [
     [212, 148, 1.5, '#dbe7ff'],
     [1338, 196, 1.2, '#dbe7ff'],
@@ -219,7 +227,7 @@ function brillantes(): string {
       const dur = 6 + ((i * 7) % 5) * 1.3
       const rayos = 'M0 0h10M0 0h-10M0 0v10M0 0v-10'
 
-      return `<circle cx="${x}" cy="${y}" r="${f(15 * s)}" fill="url(#h)"/><g transform="translate(${x} ${y}) scale(${f(s * 1.5)})" fill="none" stroke="${tono}" stroke-linecap="round"><path class="k" style="animation-duration:${f(dur)}s;animation-delay:-${f(i * 1.7)}s" d="${rayos}" stroke-width="${f(0.5 / (s * 1.5))}" stroke-opacity="0.45"/><path d="M0 0h3.4M0 0h-3.4M0 0v3.4M0 0v-3.4" stroke-width="${f(0.9 / (s * 1.5))}" stroke-opacity="0.6"/></g><circle cx="${x}" cy="${y}" r="${f(1.5 * s)}" fill="#ffffff"/><circle cx="${x}" cy="${y}" r="${f(3 * s)}" fill="${tono}" fill-opacity="0.22"/>`
+      return `<circle cx="${x}" cy="${y}" r="${f(15 * s)}" fill="url(#h)"/><g transform="translate(${x} ${y}) scale(${f(s * 1.5)})" fill="none" stroke="${tono}" stroke-linecap="round"><path${animado ? ` class="k" style="animation-duration:${f(dur)}s;animation-delay:-${f(i * 1.7)}s"` : ''} d="${rayos}" stroke-width="${f(0.5 / (s * 1.5))}" stroke-opacity="0.45"/><path d="M0 0h3.4M0 0h-3.4M0 0v3.4M0 0v-3.4" stroke-width="${f(0.9 / (s * 1.5))}" stroke-opacity="0.6"/></g><circle cx="${x}" cy="${y}" r="${f(1.5 * s)}" fill="#ffffff"/><circle cx="${x}" cy="${y}" r="${f(3 * s)}" fill="${tono}" fill-opacity="0.22"/>`
     })
     .join('')
 }
@@ -243,7 +251,9 @@ function fugaces(): string {
   return out
 }
 
-export function cieloEstrelladoSvg(): string {
+// `animado` false: el cielo quieto, sin `<style>`, sin clases y sin fugaces. Se dibuja una sola vez y no gasta GPU en reposo
+// (animado, la app lo repinta entero en cada fotograma, con sus desenfoques grandes, y llegó a medirse cerca del 46 % de una RTX 5060).
+export function cieloEstrelladoSvg(animado = true): string {
   const estilo =
     '<style>' +
     '.a{animation:a 5s ease-in-out infinite}@keyframes a{0%,100%{opacity:1}50%{opacity:.2}}' +
@@ -260,7 +270,7 @@ export function cieloEstrelladoSvg(): string {
   const zona = 'filterUnits="userSpaceOnUse" x="-400" y="-300" width="2400" height="1440"'
 
   const defs =
-    `<defs>${estilo}` +
+    `<defs>${animado ? estilo : ''}` +
     '<linearGradient id="g" x1="0" y1="0" x2="0.25" y2="1"><stop offset="0" stop-color="#02040a"/><stop offset="0.55" stop-color="#050a18"/><stop offset="1" stop-color="#03060f"/></linearGradient>' +
     '<radialGradient id="v" cx="0.5" cy="0.5" r="0.72"><stop offset="0.45" stop-color="#02040a" stop-opacity="0"/><stop offset="1" stop-color="#02040a" stop-opacity="0.85"/></radialGradient>' +
     '<radialGradient id="h"><stop offset="0" stop-color="#cfe0ff" stop-opacity="0.5"/><stop offset="0.35" stop-color="#cfe0ff" stop-opacity="0.14"/><stop offset="1" stop-color="#cfe0ff" stop-opacity="0"/></radialGradient>' +
@@ -277,12 +287,12 @@ export function cieloEstrelladoSvg(): string {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 836" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">' +
     defs +
     '<rect width="1600" height="836" fill="url(#g)"/>' +
-    viaLactea() +
+    viaLactea(animado) +
     '<rect width="1600" height="836" fill="url(#v)"/>' +
     fondoEstrellas() +
-    cercanas() +
-    brillantes() +
-    fugaces() +
+    cercanas(animado) +
+    brillantes(animado) +
+    (animado ? fugaces() : '') +
     '</svg>'
   )
 }

@@ -32,11 +32,12 @@ const VIDRIO = { blur: 18, tint: '#050a16', opacity: 0.5 }
 const VARIANTES: Record<string, ThemeSetArgs> = {
   // El nombre de la escena (`cielo`) no es el de la variante: al cambiar el dibujo se cambia aquí también, porque la app
   // puede conservar el dibujo anterior mientras la escena se llame igual.
-  estrellas: { colors: theme, backdrop: { scene: 'cielo', glass: VIDRIO } },
+  estrellas: { colors: theme, backdrop: { scene: 'cielo-fijo', glass: VIDRIO } },
+  'estrellas-animado': { colors: theme, backdrop: { scene: 'cielo', glass: VIDRIO } },
   degradado: { colors: theme, backdrop: { gradient: { stops: ['#04070e', '#1d46a0', '#04070e'], angle: 135 } } },
 }
 
-const AYUDA = `Fondos: ${Object.keys(VARIANTES).join(', ')}. «estrellas» es el cielo estrellado (el de siempre); «degradado» un degradado azul sin dibujo, por si el cielo diera problemas.`
+const AYUDA = `Fondos: ${Object.keys(VARIANTES).join(', ')}. «estrellas» es el cielo estrellado quieto (el de siempre: se pinta una vez y no gasta GPU en reposo); «estrellas-animado» el mismo con estrellas que titilan y fugaces, pero la app lo repinta sin parar y gasta cerca de la mitad de una RTX 5060; «degradado» un degradado azul sin dibujo.`
 
 // OJO: `$` y sus sustantivos (`$.theme`, `$.ui`...) no se pasan a funciones ni se guardan en variables: el motor rechaza
 // el módulo entero («$.theme is used as a value») y no carga nada. Cada llamada se escribe `$.theme.set(...)` donde se usa.
@@ -52,7 +53,7 @@ export const register: Register = on => {
     if (unpainted !== undefined) {
       $.ui.toast(unpainted)
     }
-    await $.command.register({ name: 'fondo', description: 'Cambia el fondo del tema cielo-estrellado', argumentHint: '[estrellas|degradado]' })
+    await $.command.register({ name: 'fondo', description: 'Cambia el fondo del tema cielo-estrellado', argumentHint: '[estrellas|estrellas-animado|degradado]' })
     await $.theme.set(VARIANTES.estrellas)
 
     return next(e)
@@ -78,11 +79,13 @@ export const register: Register = on => {
       return next(e)
     }
 
-    if (String(e.props.scene) !== 'cielo') {
+    const escena = String(e.props.scene)
+
+    if (escena !== 'cielo' && escena !== 'cielo-fijo') {
       return next(e)
     }
     const { Svg } = $.ui.resolve(e)
 
-    return <Svg source={cieloEstrelladoSvg()} alt="Cielo nocturno con una Vía Láctea con polvo oscuro, estrellas de colores que titilan y algunas fugaces" isInteractive />
+    return <Svg source={cieloEstrelladoSvg(escena === 'cielo')} alt="Cielo nocturno con una Vía Láctea con polvo oscuro y estrellas de colores" isInteractive />
   })
 }

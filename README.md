@@ -24,13 +24,14 @@ In the desktop app, where `/plugin` does not run: click **+** next to the prompt
 
 The sky is applied when a session starts. The `/fondo` command (Spanish for "background") switches it during a session:
 
-- `/fondo estrellas` the starry sky (the default).
+- `/fondo estrellas` the still starry sky (the default). It is drawn once and uses almost no GPU while idle.
+- `/fondo estrellas-animado` the same sky with twinkling stars and shooting stars. The app repaints the whole SVG on every frame, and on an RTX 5060 that took about 46% of the GPU while idle (about 5% with the still sky), so it is opt-in.
 - `/fondo degradado` a plain blue gradient, in case the sky gives you trouble.
 
 ## Notes
 
 - Built and checked on Claude Code 2.1.325 in the Windows desktop app. Installing it through the marketplace lines above has not been tested yet.
-- The sky is drawn as an SVG scene. Only part of its movement is confirmed to run in the app: the `stroke-dashoffset` animations. The twinkling by `opacity` and `r`, and the shooting star by `transform`, are extras: the sky looks right when still.
+- In the animated variant only part of the movement is confirmed to run in the app: the `stroke-dashoffset` animations. The twinkling by `opacity` and `r`, and the shooting star by `transform`, are extras.
 - The palette comes from the `makeColors` helper that ships with the plugin authoring guide (`hooks/make-colors.js`, kept as it was given).
 
 ## Licence
